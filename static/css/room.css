@@ -31,13 +31,14 @@ html, body {
     text-align: left;
 }
 
-#chat-container {
+#chat-container, #prompt-card {
     width: 100%;
     height: 100%;
     padding: 50px;
     box-sizing: border-box;
     position: absolute;
 }
+
 
 .text {
     border: 1px solid gray;

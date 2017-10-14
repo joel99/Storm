@@ -1,32 +1,76 @@
 $(document).ready(function() {
+  
   const socket = io();
 
   let activeRoomName = "";
 
-  //work
-  socket.emit('verify_name');
+  //onload
+  socket.emit('init_lobby');
 
-  let name = null;
+  // Button Handlers ----------------------------------------------
   
-  $('#name-text').focus();
-    
-  $('#name-form').submit(function () {
-    name = $('#name-text').val();
+  $('#create-room').click(function() {
+    let name = $('#room-name').val();
 
-    if (name.length > 0) {
-      socket.emit('new_user', {
-        name: name
+    if (name.trim().length > 0 ) {
+      console.log("Sending new room emit");
+      socket.emit('new_room', {
+	'name': name
       });
-    }  
-			 
+    }
     return false;
+  });
+
+  $('#joinRoomButton').click(function() {
+    if (activeRoomName != "") {//make sure it's valid with ajax?
+      window.location = "/room/" + activeRoomName;
+    }
+  });  
+  
+
+  // Socket Events ---------------------------------------------------
+
+  socket.on('load-rooms-menu', function(response) {
+    let roomList = JSON.parse(response)["roomList"];
+    for (let i = 0; i < roomList.length; i++) {
+      appendLobby(roomList[i]);
+    }
+    if (roomList.length != 0) {
+      activeRoomName = roomList[0]["name"];
+      $("#roomID"+activeRoomName).toggleClass("active");
+    }
+  });
+  
+  socket.on('prompt-username', function() {
+    //Prompt for name
+    let name = null;
+    $('#name-text').focus();
+    
+    $('#name-form').submit(function () {
+      name = $('#name-text').val();
+      
+      if (name.length > 0) {
+	socket.emit('try_new_user', {
+          name: name
+	});
+      }  
+      
+      return false;
+    });    
+  });
+
+  socket.on('dismiss-prompt', function(data) {
+    $('#name-container').fadeOut(500);
+    $('#lobby-welcome').html("Welcome " + data['name'] + "!");    
   });
   
   socket.on('fail_new_user', function () {
+    console.log("Failed to register");
     $('#name-form-desc').html("Usertag in use, please select another:");
   });
   
   socket.on('confirm_new_user', function (data) {
+    console.log("Confirmed register");
     $('#name-form-desc').html("Welcome...");
     $('#name-container').fadeOut(500);
     $('#lobby-welcome').html("Welcome " + data['name'] + "!");
@@ -38,18 +82,7 @@ $(document).ready(function() {
     });
     //$('#chat-text').focus();
   });
-
-  $('#create-room').submit(function() {
-    let name = $('#room-name').val();
-    //use ajax for callbacks...    
-    if (name.length > 0) {
-      socket.emit('new_room', {
-	name: name
-      });
-    }
-    return false;
-  });
-
+  
   
   socket.on('fail_new_room', function() {
     $('#room-form-desc').html("Room name in use, please select another:");
@@ -57,38 +90,14 @@ $(document).ready(function() {
 
   socket.on('confirm_new_room', function(data) {
     window.location = "/room/" + data['name'];
-  });
-		  
-  //load lobby
-  
-  $.ajax({
-    url: "/loadLobby/",
-    type: "POST",
-    data: {},
-    datatype: "json",
-    success: function(response) {
-      let roomList = JSON.parse(response)["roomList"];
-      for (let i = 0; i < roomList.length; i++) {
-	appendLobby(roomList[i]);
-      }
-      if (roomList.length != 0) {
-	activeRoomName = roomList[0]["name"];
-	$("#roomID"+activeRoomName).toggleClass("active");
-      }
-    },
-    error: function(data) {
-      console.log("boohoo");
-    }
-  });
-      
-  
-  $('#joinRoomButton').click(function() {
-    if (activeRoomName != "") {//make sure it's valid with ajax?
-      window.location = "/room/" + activeRoomName;
-    }
   });  
+
+  socket.on('lock_room', function (data) {
+    deleteLobby(data['name']);
+  });
   
-  
+  // Helper functions -------------------------------------
+  // Appends room entry to lobby menu
   var appendLobby = function (newRoom) {
     var $div = $("<div>", {class:"list-group-item", id:"roomID"+newRoom["name"]});
     $div.html(newRoom["name"]);
@@ -99,20 +108,12 @@ $(document).ready(function() {
     });
     $("#lobby-list").append($div);
   };
-
-  var deleteLobby = function (data) {
-    $("#roomID"+data["name"]).remove();
+  
+  // Removes room entry from lobby menu
+  var deleteLobby = function (roomName) {
+    $("#roomID" + roomName).remove();
   }
   
-  socket.on('registered_room', function (data) {
-    appendLobby(JSON.parse(data));
-  });
-
-  socket.on('delete_room', function (data) {
-    deleteLobby(JSON.parse(data));
-  });
-  
-		  
 		  
 });
 

@@ -1,9 +1,22 @@
 $(document).ready(function () {
   const socket = io();
+
+  //onload
+  socket.emit('init_room');
+  $('#prompt-container').toggle();
+  //Button listeners --------------------------------------
   
+  //Pre-storm
+  $('#start-button').click(function () {    
+    console.log("button pressed");
+    const rootText = $('#storm-root-text').val();
+    let rootDict = {'root' : rootText ? rootText : ""};
+    socket.emit('start_storm', rootDict);
+    return false;
+  });
   
-  $('#chat-form').submit(function () {
-    var message = $('#chat-text').val();
+  $('#chat-form').click(function () {
+    var message = $('#chat-text').val().trim();
 
     if (message.length > 0) {
       socket.emit('new_message', {
@@ -16,13 +29,13 @@ $(document).ready(function () {
     return false;
   });
 
-  var append = function (string) {
-    $('#chat-log').append(string + '\n');
-    $('#chat-log').scrollTop($('#chat-log')[0].scrollHeight);
-  };
+  //Socket listeners ---------------------------------------
+  
+  socket.on('release-start-button', function (data) {
+    $('#start-button').toggleClass('disabled');
+  });
   
   socket.on('chat_message', function (data) {
-    console.log('liberty');
     append(data['name'] + ': ' + data['message']);
   });
 
@@ -30,9 +43,25 @@ $(document).ready(function () {
     append('[SERVER] ' + data['message']);
   });
 
+  socket.on('start_storm_all', function (data) {
+    console.log("Game begins!");
+    $('#chat-container').toggle();
+    $('#prompt-container').toggle();    
+  });
+	    
+  
+  //Helpers ------------------------------------------------
+  
+  var append = function (string) {
+    $('#chat-log').append(string + '\n');
+    $('#chat-log').scrollTop($('#chat-log')[0].scrollHeight);
+  };
+  
   $(window).bind('beforeunload', function () {
     socket. emit('user_disconnect', {
       name: name
     });
   });
+
+  
 });

@@ -7,17 +7,25 @@
     <link rel="stylesheet" type="text/css" href="/static/css/room.css">
   </head>
   <body>
-    <div class="row">
+    <br>
+    <div class="row">      
       <div class="col-sm-3"> </div>
       <div class="col-sm-6">
 	<div class="row">
-	  <div class="col-sm-8">
-	    <h3>Room: </h3>
+	  <div class="col-sm-3">
+	    <p> Room : {{ roomTitle }} </p>
 	  </div>
-	  <div class="col-sm-4">
-	    <a href="/">Disconnect</a>
+	  <div class="col-sm-2">
+	    <a href="/">Lobby</a>
+	  </div>
+	  <div class="col-sm-7">
+	    <form class="form-inline" id="storm-form">
+	      <input type="text" class="form-control mb-2 mr-sm-2 mb-sm-0" id="storm-root-text" placeholder="Storm Root">
+	      <button type="button" class="btn btn-default disabled" id="start-button">Start Storming</button>
+	    </form>
 	  </div>
 	</div>
+	<div id="main-container">	  
 	  <div id="chat-container">
 	    <textarea class="text" id="chat-log" readonly></textarea>
 	    <br>
@@ -25,8 +33,19 @@
               <input class="text" id="chat-text" type="text" name="message"><input class="button" id="chat-button" type="submit" name="submit" value="Send">
 	    </form>
 	  </div>
+	  <div id="prompt-container">
+	    <div class="card" align="center" id="prompt-card">
+	      <div class="card-block" id="prompt-text">
+		Ideate!
+	      </div>
+	    </div>
+	    <form id="prompt-form">
+              <input class="text" id="prompt-text" type="text" name="message"><input class="button" id="prompt-button" type="submit" name="submit" value="Send">
+	    </form>	  
+	  </div>
 	</div>
-	<div class = "col-sm-3"></div>
+      </div>
+      <div class = "col-sm-3"></div>
     </div>
     <script type="text/javascript" src="/static/js/jquery.min.js"></script>
     <script type="text/javascript" src="/static/js/socket.io.min.js"></script>
