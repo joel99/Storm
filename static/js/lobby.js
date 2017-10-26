@@ -12,11 +12,15 @@ $(document).ready(function() {
   $('#create-room').click(function() {
     let name = $('#room-name').val();
 
-    if (name.trim().length > 0 ) {
-      console.log("Sending new room emit");
-      socket.emit('new_room', {
-	'name': name
-      });
+    if (name.trim() === 'lobby') {
+      console.log('Nice try buddy');
+    } else {    
+      if (name.trim().length > 0 ) {
+	console.log("Sending new room emit");
+	socket.emit('new_room', {
+	  'name': name.trim()
+	});
+      }
     }
     return false;
   });

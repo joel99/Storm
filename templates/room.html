@@ -11,21 +11,21 @@
     <div class="row">      
       <div class="col-sm-3"> </div>
       <div class="col-sm-6">
-	<div class="row">
+	<div class="row" align="center">
 	  <div class="col-sm-3">
 	    <p> Room : {{ roomTitle }} </p>
 	  </div>
 	  <div class="col-sm-2">
-	    <a href="/">Lobby</a>
+	    <button class="btn btn-default" id="lobby-button">Lobby</button>
 	  </div>
 	  <div class="col-sm-7">
 	    <form class="form-inline" id="storm-form">
 	      <input type="text" class="form-control mb-2 mr-sm-2 mb-sm-0" id="storm-root-text" placeholder="Storm Root">
-	      <button type="button" class="btn btn-default disabled" id="start-button">Start Storming</button>
+	      <button type="button" class="btn btn-default disabled" id="phase-button">Start Storming</button>
 	    </form>
 	  </div>
 	</div>
-	<div id="main-container">	  
+	<div id="main-container" align="center">	  
 	  <div id="chat-container">
 	    <textarea class="text" id="chat-log" readonly></textarea>
 	    <br>
@@ -34,14 +34,24 @@
 	    </form>
 	  </div>
 	  <div id="prompt-container">
-	    <div class="card" align="center" id="prompt-card">
-	      <div class="card-block" id="prompt-text">
-		Ideate!
+	    <div class="row">
+	      
+	      <div class="card" align="center" id="prompt-card">
+		<ul class="list-group list-group-flush">
+		  <!--<li class="list-group-item">Vestibulum at eros</li>-->
+		</ul>
+		<div class="card-block" id="prompt-text">
+		  Ideate!
+		</div>
+	      </div>
+
+	      <br>
+	      <div class="row">
+		<form id="prompt-form" align="center">
+		  <input class="text" id="storm-text-input" type="text" name="message"><input class="button" id="prompt-button" type="submit" name="submit" value="Send">
+		</form>	  
 	      </div>
 	    </div>
-	    <form id="prompt-form">
-              <input class="text" id="prompt-text" type="text" name="message"><input class="button" id="prompt-button" type="submit" name="submit" value="Send">
-	    </form>	  
 	  </div>
 	</div>
       </div>

@@ -31,14 +31,13 @@ html, body {
     text-align: left;
 }
 
-#chat-container, #prompt-card {
+#chat-container{
     width: 100%;
     height: 100%;
     padding: 50px;
     box-sizing: border-box;
     position: absolute;
 }
-
 
 .text {
     border: 1px solid gray;
@@ -61,7 +60,13 @@ html, body {
     resize: none;
 }
 
-#chat-text {
+#prompt-card {
+    height: 200px;
+    padding: 80px;
+    background-color:#DDDDDD;
+}
+
+#chat-text, #storm-text-input {
     width: 540px;
     height: 30px;
 }
@@ -82,7 +87,7 @@ html, body {
     margin-left: 10px;
 }
 
-#chat-button {
+#chat-button, #prompt-button {
     width: 50px;
     height: 30px;
     margin: 0;

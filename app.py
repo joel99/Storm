@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, session, url_for, redirect
 from flask_socketio import SocketIO, join_room, leave_room, send, emit
-
+from random import randrange
 import os, json
 
 app = Flask(__name__)
@@ -19,8 +19,6 @@ def root():
 def room(roomName):
 
     if 'username' in session and session['username'] in allUsers.keys() and roomName in allRooms.keys():
-        print roomName
-        print allRooms
         if allRooms[roomName]['status'] == 0 or session['username'] in allRooms[roomName]['active']:
             userRooms[session['username']] = roomName
             if session['username'] not in allRooms[roomName]['active']:
@@ -35,12 +33,24 @@ def page_not_found(e):
 
 # Node class...
 class Node: 
-  def __init__(self, cargo=None, parent=None, next=[]):
-    self.parent = parent
-    self.data = cargo 
-    self.adj = next   
-  def __str__(self): 
-    return str(self.data + " | Neighbors : " + self.adj)
+    def __init__(self, cargo=None, parent=None, nextNodes=[]):
+        self.parent = parent
+        self.data = cargo 
+        self.adj = nextNodes
+    def __str__(self): 
+        return str(self.data + " | Neighbors : " + self.adj)
+    def __dict__(self):
+        adjDicts = []
+        for n in self.adj:
+            adjDicts.append(dict(n))
+        ret = {
+            'next': adjDicts,
+            'data': self.data     
+        }
+        return ret
+    def randomIndex(self):
+        return randrange(0,len(self.adj))
+      
 
 
 # Globals ============================================
@@ -48,6 +58,9 @@ class Node:
 # active: [<activeUsernames>]
 # status: [<phase>]
 # host  : [<hostUsername>]
+# threads : [<StormData>]
+# threads contains "root": root Node - model : pass indices in list
+# client holds all data
 allRooms = {}
 # Schema: dictionary: keys are usernames, entries are sid
 allUsers = {}
@@ -64,7 +77,8 @@ def loginWithName():
 
 @socketio.on('init_lobby')
 def init_lobby():
-    roomList = [{"name" : key} for key in allRooms.keys()]
+    roomlistPre = list(filter(lambda key: allRooms[key]["status"] == 0, allRooms.keys()))
+    roomList = [{'name': key} for key in roomlistPre]
     socketio.emit('load-rooms-menu', json.dumps({"roomList": roomList}));    
     if 'username' in session and session['username'] in allUsers.keys():
         allUsers[session['username']] = request.sid #refresh it in case new one
@@ -84,6 +98,8 @@ def new_user(data):
         allUsers[username] = request.sid        
         session["username"] = username 
         socketio.emit('confirm_new_user', {'name': data['name']}, room=request.sid);
+        allRooms['lobby']['active'].append(username)
+        userRooms[username] = 'lobby'
 
 #clear traces
 @socketio.on('user_disconnect')
@@ -91,6 +107,7 @@ def user_disconnect(data):
     username = data['name']
     print "User disconnected"
     del allUsers[username]
+    leaveRoom(userRooms[username])
     if userRooms[username] in allRooms:
         allRooms[userRooms[username]]["active"].remove(username)
     del userRooms[username]
@@ -110,6 +127,8 @@ def new_room(data):
             "threads" : {} #for storing game data
         }
         allRooms[data['name']] = roomDict
+        #pop from lobby
+        allRooms['lobby']['active'].pop(session['username'])
         userRooms[session['username']] = data['name']
         join_room(data['name'])
         socketio.emit('confirm_new_room', data, room=request.sid)
@@ -120,14 +139,21 @@ def new_room(data):
 def init_room():
     print "Testing \n\n\n"
     host = getCurRoom()['host']
-    if session["username"] == host:
-        socketio.emit('release-start-button', room=request.sid)
-
-        
-@socketio.on('new_message')
-def new_message(data):
-    data["name"] = session["username"]
-    socketio.emit('chat_message', data)#, room=userRooms[session["username"]])
+    join_room(userRooms[session["username"]])
+    state = getCurRoom()["status"]
+    if state == 0:
+        socketio.emit('pre-storm-init', room=request.sid)
+        if session["username"] == host:
+            socketio.emit('release-phase-button', room=request.sid)
+        print "pre-storm room init"
+    elif state == 1:
+        data = getCurRoom()["threads"] #pass cur game data
+        #pass root and data
+        socketio.emit('storm-init', dict(data), room=request.sid)
+        print "storm room init"
+    else:
+        socketio.emit('post-storm-init', room=request.sid)
+        print "post-storm room init"        
 
 @socketio.on('start_storm')
 def start_storm(data):
@@ -135,14 +161,39 @@ def start_storm(data):
         root = "Ideate!"
     else:
         root = data['root']
+    print root
+    print "debug\n\n"
     #track with nodes
     getCurRoom()["threads"]["root"] = Node(root)
     getCurRoom()["status"] = 1
     socketio.emit('lock_room', {'name' : userRooms[session['username']]})
     #room = getCurRoom or something
-    socketio.emit('start_storm_all', {'name': root, "path":[]})
+    socketio.emit('storm-init', {'name': root, "path":[]}, room = userRooms[session['username']])
 
+@socketio.on('end_storm')
+def end_storm():
+    getCurRoom()['status'] = 2
+    socketio.emit('post-storm-init', room = userRooms[session['username']])
+    print 'end storm'
 
+@socketio.on('close_storm')
+def close_storm():
+    print 'close_storm'
+    #eject all of those folks
+    socketio.emit('eject-to-lobby', room = userRooms[session['username']])
+    #get list of users
+    roomName = userRooms[session['username']]
+    for player in allRooms[roomName]['active']:
+        userRooms[player] = 'lobby'
+    allRooms.pop(roomName, None)
+
+# Phase listeners ----------------------------------------------
+@socketio.on('new_message')
+def new_message(data):
+    data["name"] = session["username"]
+    print userRooms
+    socketio.emit('chat-message', data, room=userRooms[session["username"]])
+    
 # Helpers ------------------------------------------------------
 def getCurRoom():
     return allRooms[userRooms[session['username']]]
