@@ -23,13 +23,8 @@ $(document).ready(function () {
     $('#chat-container').toggle(true);
 
     $('#phase-button').html("Start Storm");
-    $('#phase-button').click(phaseFunction(0));
-
-    //Handle state changes
-    
-    
-    //Handle visuals
-    
+    $('#phase-button').off('click'); //clear functions...
+    $('#phase-button').click(phaseFunction(0));    
 
     //Handle functions
     
@@ -53,21 +48,12 @@ $(document).ready(function () {
     $('#storm-res-container').toggle(false);
     $('#prompt-container').toggle(true);
     $('#phase-button').html('End Storm');
+    $('#phase-button').off('click'); //clear functions...
     $('#phase-button').click(phaseFunction(1));
     
     globalRoute = [];
     globalThreads = data; //sounds like a good place to use promises
     showCard(data);
-    console.log("storm inited");
-    console.log(globalThreads);
-    console.log(globalRoute);
-    console.log(globalThreads);
-
-    //Handle state changes
-    
-    
-    //Handle visuals
-
 
     //Handle functions
     
@@ -88,7 +74,6 @@ $(document).ready(function () {
 	  globalRoute[globalRoute.length - 1] = newScrambleIndex;
 	}
 	
-	console.log(curLevel);
 	showCard(curLevel['next'][newScrambleIndex]);
       }
       
@@ -100,10 +85,8 @@ $(document).ready(function () {
     $('#submit-storm-idea').click(function(e) {
       e.preventDefault();
       var message = $('#storm-text-input').val().trim();
-
+      
       if (message.length > 0) {
-	console.log(globalRoute);
-	console.log('submitting new storm idea');
 	socket.emit('new_storm_idea', {
           'message': message,
 	  'route': globalRoute
@@ -129,11 +112,22 @@ $(document).ready(function () {
     $('#prompt-container').toggle(false);
     $('#storm-res-container').toggle(true);
 
-    $('#phase-button').html('Close Storm');    
+    $('#phase-button').html('Close Storm');
+    $('#phase-button').off('click'); //clear functions...
     $('#phase-button').click(phaseFunction(2));
-
-    //Handle state changes
-    
+    globalThreads = data;
+    //add thread system
+    $('#storm-res-text').html("");
+    $('#storm-res-text').append('<h1>Storm Results</h1>');
+    jQuery('<div/>', {
+      id: 'storm-res-wrapper',
+      text: 'Storm results:',
+      align: 'left'
+    }).appendTo('#storm-res-text');
+    //process globalThreads
+    console.log('post storming');
+    console.log(globalThreads);
+    $('#storm-res-wrapper').html(genDictHtml(globalThreads, 0));
     
     //Handle visuals
 
@@ -142,6 +136,22 @@ $(document).ready(function () {
     
   });
 
+  //recursive html generator
+  var genDictHtml = function(d, indent){
+    console.log('gen dicting ' + indent);
+    let ret = jQuery('<div/>', {});
+    ret.append(jQuery('<p/>', {
+      text: d['data'],
+      style: 'text-indent: ' + indent + 'px'
+    }));
+    indent += 10;
+    console.log('throwing a new indent ' + indent);
+    for (let i = 0; i < d['next'].length; i++) {
+      ret.append(genDictHtml(d['next'][i], indent));
+    }
+    return ret;
+  }
+  
   socket.on('eject-to-lobby', function (data) {
     window.location = "/";
   });
@@ -161,20 +171,12 @@ $(document).ready(function () {
   socket.on('server-storm-idea', function (data) {
     //data schema: data, route
     //update global threads
-    console.log('getting storm idea from server');
-    console.log(getRoute(data['route']));
     getRoute(data['route'])['next'].push({'data':data['message'], 'next':[]});    
-    console.log('received ' + data['message']);
   });
 
   socket.on('swap-to-new-idea', function (data) {
     //set route basically - unnecessary... just swap in client (circumvent validation)
-    console.log('old route');
-    console.log(globalRoute);
-    console.log(globalThreads);
-    console.log('swapping to new route');
     globalRoute.push(data['newIndex']);
-    console.log(globalRoute);
     showGlobalRoute();
   });
   
@@ -198,14 +200,10 @@ $(document).ready(function () {
 
   //arr - gets dict at end of route
   var getRoute = function(route) {
-    console.log('route prompt');
-    console.log(route);
     let curLevel = globalThreads;
     for (let i = 0; i < route.length; i++) {
       curLevel = curLevel['next'][route[i]];
     }
-    console.log('getting route');
-    console.log(curLevel);
     return curLevel;
   }
   
@@ -230,6 +228,7 @@ $(document).ready(function () {
 	const rootText = $('#storm-root-text').val();
 	let rootDict = {'root' : rootText ? rootText : ""};
 	console.log(rootDict);
+	console.log('starting storm for some reason');
 	socket.emit('start_storm', rootDict);
 	return false;
       }
