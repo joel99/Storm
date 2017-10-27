@@ -12,9 +12,6 @@ socketio = SocketIO(app)
 # Lobby
 @app.route("/")
 def root():
-    if 'username' in session:
-        print "THIS CODE IS ACCESSED!!!\n\n"
-        
     return render_template('index.html')
 
 # Rooms
@@ -37,16 +34,14 @@ def page_not_found(e):
 
 # Node class...
 class Node: 
-    def __init__(self, cargo=None, parent=None, nextNodes=[]):
+    def __init__(self, cargo=None, parent=None):
         self.parent = parent
         self.data = cargo 
-        self.adj = nextNodes
+        self.adj = []
     def __str__(self): 
-        return str(self.data + " | Neighbors : " + self.adj)
-    def __dict__(self):
-        adjDicts = []
-        for n in self.adj:
-            adjDicts.append(dict(n))
+        return str("Node " + self.data + " | Neighbors : mia")
+    def toDict(self):
+        adjDicts = [n.toDict() for n in self.adj]
         ret = {
             'next': adjDicts,
             'data': self.data     
@@ -85,7 +80,7 @@ def init_lobby():
     roomList = [{'name': key} for key in roomlistPre]
     socketio.emit('load-rooms-menu', json.dumps({"roomList": roomList}));    
     if 'username' in session and session['username'] in allUsers.keys():
-        userRooms[session['username']] = 'lobby'        
+        userRooms[session['username']] = 'lobby'  
         if session['username'] not in allRooms['lobby']['active']:
             allRooms['lobby']['active'].append(session['username'])
         allUsers[session['username']] = request.sid #refresh it in case new one
@@ -94,7 +89,6 @@ def init_lobby():
     else:
         print "prompting username \n\n"
         socketio.emit('prompt-username');
-
 
 # Users and Rooms ===========================================
 @socketio.on('try_new_user')
@@ -151,12 +145,7 @@ def new_room(data):
 def init_room():
     print "Testing \n\n\n"
     host = getCurRoom()['host']
-    print 'initing room, userRooms is ' + str(userRooms)
     join_room(userRooms[session["username"]])
-    print 'so angery\n\n'
-    print session['username']
-    print userRooms[session['username']]
-    
     state = getCurRoom()["status"]
     if state == 0:
         print "STATE = 0"
@@ -165,9 +154,11 @@ def init_room():
             socketio.emit('release-phase-button', room=request.sid)
         print "pre-storm room init"
     elif state == 1:
-        data = getCurRoom()["threads"] #pass cur game data
+        data = getCurRoom()['threads'].toDict() #pass cur game data
+        print "passing game data"
+        print data
         #pass root and data
-        socketio.emit('storm-init', dict(data), room=request.sid)
+        socketio.emit('storm-init', data, room=request.sid)
         print "storm room init"
     else:
         socketio.emit('post-storm-init', room=request.sid)
@@ -182,11 +173,12 @@ def start_storm(data):
     print root
     print "debug\n\n"
     #track with nodes
-    getCurRoom()["threads"]["root"] = Node(root)
+    getCurRoom()["threads"] = Node(root)
     getCurRoom()["status"] = 1
     socketio.emit('lock_room', {'name' : userRooms[session['username']]})
     #room = getCurRoom or something
-    socketio.emit('storm-init', {'name': root, "path":[]}, room = userRooms[session['username']])
+    storm_data = getCurRoom()['threads'].toDict()
+    socketio.emit('storm-init', storm_data, room = userRooms[session['username']])
 
 @socketio.on('end_storm')
 def end_storm():
@@ -218,12 +210,26 @@ def new_message(data):
     print 'hello\n\n'
     print userRooms[session['username']]
     socketio.emit('chat-message', data, room=userRooms[session["username"]])
+
+@socketio.on('new_storm_idea')
+def new_storm_idea(data):
+    #put into threads
+    node = getCurRoom()['threads']
+    route = data['route']
+    newIdea = data['message']
+    #traverse to node
+    newNode = Node(newIdea)
+    for i in range(len(route)):
+        node = node.adj[route[i]]
+    node.adj.append(newNode)
+    
+    #pass back
+    socketio.emit('server-storm-idea', data, room=userRooms[session["username"]])
+    data['newIndex'] = len(node.adj) - 1
+    socketio.emit('swap-to-new-idea', data, room=request.sid)
     
 # Helpers ------------------------------------------------------
 def getCurRoom():
-    print "getCurRoom called"
-    print allRooms
-    print "endCurRoom call"
     return allRooms[userRooms[session['username']]]
 
     
