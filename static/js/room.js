@@ -54,7 +54,7 @@ $(document).ready(function () {
     $('#prompt-container').toggle(true);
     $('#phase-button').html('End Storm');
     $('#phase-button').click(phaseFunction(1));
-
+    
     globalRoute = [];
     globalThreads = data; //sounds like a good place to use promises
     showCard(data);
@@ -78,7 +78,6 @@ $(document).ready(function () {
       curLevel = getRoute(globalRoute.slice(0, globalRoute.length - 1));
       //now get a random one on global route
       if (globalRoute.length == 0) {//edge case
-	console.log('fuck');
 	showCard(globalThreads);
       } else {
 	newScrambleIndex = 0;
@@ -113,6 +112,15 @@ $(document).ready(function () {
       $('#storm-text-input').val('');      
       //passes to server, server returns all
       return false;
+    });
+    $('#revert-up').click(function(e) {
+      e.preventDefault();
+      if (globalRoute.length === 0) {
+	showStatus("On root level, cannot revert.");
+      } else {
+	globalRoute.pop();
+	showGlobalRoute();
+      }      
     });
   });  
 
@@ -180,6 +188,12 @@ $(document).ready(function () {
 	    
   var showCard = function(data) {
     $('#prompt-text').html(data['data']);
+    if (globalRoute.length != 0) {
+      curLevel = getRoute(globalRoute.slice(0, globalRoute.length - 1));    
+      showSiblingCount(curLevel['next'].length - 1);
+    } else {
+      showSiblingCount(0);
+    }
   }
 
   //arr - gets dict at end of route
@@ -197,6 +211,14 @@ $(document).ready(function () {
   
   var showGlobalRoute = function() {
     showCard(getRoute(globalRoute));
+  }
+
+  var showStatus = function(text) {
+    $('#storm-status-text').html(text);
+  }
+
+  var showSiblingCount = function(count) {
+    $('#sibling-count').html(count);
   }
   
   // Misc --------------------------------------------------

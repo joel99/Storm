@@ -48,13 +48,18 @@
 	      </div>
 
 	      <br>
-	      <div class="row">		
+	      <div class="row">
 		<form id="prompt-form" align="center">
 		  <input class="text" id="storm-text-input" type="text" name="message">
-		  <input class="btn btn-default" id="submit-storm-idea" type="submit" name="submit" value="Send Idea">
+		  <input class="btn btn-success" id="submit-storm-idea" type="submit" name="submit" value="Send Idea">
 		  <input class="btn btn-warning" id="scramble-storm" type="submit" name="scramble" value="Scramble!">
-		</form>	  
+		  <input class="btn btn-default" id="revert-up" type="submit" name="up" value="Revert">
+		</form>
 	      </div>
+	      <div class="row">
+		<p id="storm-status" align="center">		  
+		  <span id="sibling-count"></span> siblings at the current level. Status: <span id="storm-status-text">Storming</span>
+		</p>
 	    </div>
 	  </div>
 	  <!--poststorm-->
