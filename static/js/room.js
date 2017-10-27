@@ -7,7 +7,7 @@ $(document).ready(function () {
   //Button listeners --------------------------------------
 
   $('#lobby-button').click(function() {
-    socket.emit('lobby-exit');
+    socket.emit('lobby_exit');
     window.location = "/";
   });
   
@@ -16,12 +16,22 @@ $(document).ready(function () {
 
   //Initialization listeners
   socket.on('pre-storm-init', function () {
-    $('#prompt-container').toggle();
-    $('#storm-res-container').toggle();
-    
+    $('#prompt-container').toggle(false);
+    $('#storm-res-container').toggle(false);
+    $('#chat-container').toggle(true);
+
+    $('#phase-button').html("Start Storm");
     $('#phase-button').click(phaseFunction(0));
+
+    //Handle state changes
     
-    $('#chat-form').click(function () {
+    
+    //Handle visuals
+    
+
+    //Handle functions
+    
+    $('#chat-button').click(function () {
       var message = $('#chat-text').val().trim();
 
       if (message.length > 0) {
@@ -29,7 +39,6 @@ $(document).ready(function () {
           message: message
 	});
       }
-
       $('#chat-text').val('');
       
       return false;
@@ -38,35 +47,65 @@ $(document).ready(function () {
   });
 
   socket.on('storm-init', function (data) {
-    $('#chat-container').toggle();
-    $('#storm-res-container').toggle();
-    $('#prompt-container').toggle();
-    $('#phase-button').html("End Storm");
+    $('#chat-container').toggle(false);
+    $('#storm-res-container').toggle(false);
+    $('#prompt-container').toggle(true);
+    $('#phase-button').html('End Storm');
+    $('#phase-button').click(phaseFunction(1));
+
     showCard(data);
     console.log("storm inited");
-    $('#phase-button').click(phaseFunction(1));
-    $('#prompt-button').click(function(){
+
+    //Handle state changes
+    
+    
+    //Handle visuals
+
+
+    //Handle functions
+    
+    $('#scramble-storm').click(function(e){
+      return false;
       //cards displayed show all stacked storm cards
       //send a request emit with data to host with data
       //replaces current with entered data
     });
+    $('#submit-storm-idea').click(function(e) {
+      return false;
+    });
   });
 
   socket.on('post-storm-init', function (data) {
-    $('#chat-container').toggle();
-    $('#prompt-container').toggle();
+    $('#chat-container').toggle(false);
+    $('#prompt-container').toggle(false);
+    $('#storm-res-container').toggle(true);
+
+    $('#phase-button').html('Close Storm');    
     $('#phase-button').click(phaseFunction(2));
-    $('#phase-button').html('Close Storm');
+
+    //Handle state changes
+    
+    
+    //Handle visuals
+
+
+    //Handle functions
+    
   });
 
+  socket.on('eject-to-lobby', function (data) {
+    window.location = "/";
+  });
+  
   // Communication Listeners (Core) ------------------
 
   // Pre-storm : chat
   socket.on('chat-message', function (data) {
+    console.log('received message');
     append(data['name'] + ': ' + data['message']);
   });
 
-  socket.on('server_message', function (data) {
+  socket.on('server-message', function (data) {
     append('[SERVER] ' + data['message']);
   });
   
@@ -75,7 +114,8 @@ $(document).ready(function () {
   
   socket.on('release-phase-button', function (data) {
     $('#phase-button').toggleClass('disabled');
-  });  
+    console.log("nice, phase relased!");
+  });
   
 	    
   var showCard = function(data) {
@@ -106,7 +146,7 @@ $(document).ready(function () {
       }
       break;
     }
-  }
+  }  
   
   //Helpers ------------------------------------------------
   

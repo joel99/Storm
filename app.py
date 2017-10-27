@@ -12,15 +12,19 @@ socketio = SocketIO(app)
 # Lobby
 @app.route("/")
 def root():
+    if 'username' in session:
+        print "THIS CODE IS ACCESSED!!!\n\n"
+        
     return render_template('index.html')
 
 # Rooms
 @app.route("/room/<roomName>")
 def room(roomName):
-
     if 'username' in session and session['username'] in allUsers.keys() and roomName in allRooms.keys():
         if allRooms[roomName]['status'] == 0 or session['username'] in allRooms[roomName]['active']:
             userRooms[session['username']] = roomName
+            print 'room registered'
+            print userRooms
             if session['username'] not in allRooms[roomName]['active']:
                 allRooms[roomName]['active'].append(session['username'])
             return render_template('room.html', roomTitle = roomName)
@@ -61,7 +65,7 @@ class Node:
 # threads : [<StormData>]
 # threads contains "root": root Node - model : pass indices in list
 # client holds all data
-allRooms = {}
+allRooms = {'lobby': {'active':[], 'status': -1}}
 # Schema: dictionary: keys are usernames, entries are sid
 allUsers = {}
 # Schema: dictionary: keys are usernames, entries are currently connected room names
@@ -76,13 +80,17 @@ def loginWithName():
     return json.dumps({"success":True})
 
 @socketio.on('init_lobby')
-def init_lobby():
+def init_lobby():        
     roomlistPre = list(filter(lambda key: allRooms[key]["status"] == 0, allRooms.keys()))
     roomList = [{'name': key} for key in roomlistPre]
     socketio.emit('load-rooms-menu', json.dumps({"roomList": roomList}));    
     if 'username' in session and session['username'] in allUsers.keys():
+        userRooms[session['username']] = 'lobby'        
+        if session['username'] not in allRooms['lobby']['active']:
+            allRooms['lobby']['active'].append(session['username'])
         allUsers[session['username']] = request.sid #refresh it in case new one
         socketio.emit('dismiss-prompt', {'name': session['username']});
+        join_room('lobby')
     else:
         print "prompting username \n\n"
         socketio.emit('prompt-username');
@@ -104,14 +112,17 @@ def new_user(data):
 #clear traces
 @socketio.on('user_disconnect')
 def user_disconnect(data):
-    username = data['name']
+    username = session['username']
     print "User disconnected"
+    #put a timer on.
+    """
     del allUsers[username]
     leaveRoom(userRooms[username])
     if userRooms[username] in allRooms:
         allRooms[userRooms[username]]["active"].remove(username)
     del userRooms[username]
-
+    """
+    
 @socketio.on('new_room')
 def new_room(data):
     #assume valid user for now
@@ -128,20 +139,27 @@ def new_room(data):
         }
         allRooms[data['name']] = roomDict
         #pop from lobby
-        allRooms['lobby']['active'].pop(session['username'])
-        userRooms[session['username']] = data['name']
-        join_room(data['name'])
+        allRooms['lobby']['active'].remove(session['username'])
+        userRooms[session['username']] = data['name']        
+        leave_room('lobby')
         socketio.emit('confirm_new_room', data, room=request.sid)
         socketio.emit('registered_room', json.dumps({"name": data['name']}))
+        print 'new room finished making, now userRooms is '
 
         
 @socketio.on('init_room')
 def init_room():
     print "Testing \n\n\n"
     host = getCurRoom()['host']
+    print 'initing room, userRooms is ' + str(userRooms)
     join_room(userRooms[session["username"]])
+    print 'so angery\n\n'
+    print session['username']
+    print userRooms[session['username']]
+    
     state = getCurRoom()["status"]
     if state == 0:
+        print "STATE = 0"
         socketio.emit('pre-storm-init', room=request.sid)
         if session["username"] == host:
             socketio.emit('release-phase-button', room=request.sid)
@@ -180,22 +198,32 @@ def end_storm():
 def close_storm():
     print 'close_storm'
     #eject all of those folks
+    allRooms.pop(userRooms[session['username']], None)
     socketio.emit('eject-to-lobby', room = userRooms[session['username']])
-    #get list of users
-    roomName = userRooms[session['username']]
-    for player in allRooms[roomName]['active']:
-        userRooms[player] = 'lobby'
-    allRooms.pop(roomName, None)
+    #userRooms taken care of on lobby load
 
+    
+@socketio.on('lobby_exit')
+def lobby_exit():
+    print 'lobby_exit'
+    roomName = userRooms[session['username']]
+    userRooms[session['username']] = 'lobby'
+    allRooms[roomName]['active'].remove(session['username'])
+    leave_room(roomName)
+    
 # Phase listeners ----------------------------------------------
 @socketio.on('new_message')
 def new_message(data):
     data["name"] = session["username"]
-    print userRooms
+    print 'hello\n\n'
+    print userRooms[session['username']]
     socketio.emit('chat-message', data, room=userRooms[session["username"]])
     
 # Helpers ------------------------------------------------------
 def getCurRoom():
+    print "getCurRoom called"
+    print allRooms
+    print "endCurRoom call"
     return allRooms[userRooms[session['username']]]
 
     

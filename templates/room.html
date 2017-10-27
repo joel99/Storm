@@ -25,7 +25,8 @@
 	    </form>
 	  </div>
 	</div>
-	<div id="main-container" align="center">	  
+	<div id="main-container" align="center">
+	  <!--pre-storm-->	  
 	  <div id="chat-container">
 	    <textarea class="text" id="chat-log" readonly></textarea>
 	    <br>
@@ -33,6 +34,7 @@
               <input class="text" id="chat-text" type="text" name="message"><input class="button" id="chat-button" type="submit" name="submit" value="Send">
 	    </form>
 	  </div>
+	  <!--storm-->	  
 	  <div id="prompt-container">
 	    <div class="row">
 	      
@@ -46,10 +48,26 @@
 	      </div>
 
 	      <br>
-	      <div class="row">
+	      <div class="row">		
 		<form id="prompt-form" align="center">
-		  <input class="text" id="storm-text-input" type="text" name="message"><input class="button" id="prompt-button" type="submit" name="submit" value="Send">
+		  <input class="text" id="storm-text-input" type="text" name="message">
+		  <button class="btn btn-default" id="submit-storm-idea" name="submit">
+		    Send idea
+		  </button>
+		  <button class="btn btn-warning" id="scramble-storm" name="scramble">
+		    Scramble!
+		  </button>
 		</form>	  
+	      </div>
+	    </div>
+	  </div>
+	  <!--poststorm-->
+	  <div id="storm-res-container">
+	    <div class="row">	      
+	      <div class="card" align="center" id="storm-res-card"> <!-- fix -->
+		<div class="card-block" id="storm-res-text">
+		  Storm session over (under construction).
+		</div>
 	      </div>
 	    </div>
 	  </div>
